@@ -17,6 +17,14 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // just added before running migrations (php artisan migrate)
+            $table->string('voter_id')->unique();
+            $table->text('facial_descriptors')->nullable();
+            $table->string('facial_image')->nullable();
+            $table->boolean('has_voted')->default(false);
+            $table->timestamp('last_vote_at')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });

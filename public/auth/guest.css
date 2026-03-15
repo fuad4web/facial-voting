@@ -1,0 +1,138 @@
+    * {
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body {
+    font-family:'Figtree',sans-serif;
+    background:linear-gradient(135deg,#4f46e5,#2563eb,#06b6d4);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+/* Main Wrapper */
+.auth-wrapper {
+    width:100%;
+    max-width:1050px;
+    background:white;
+    border-radius:16px;
+    overflow:hidden;
+    display:flex;
+    box-shadow:0 20px 60px rgba(0,0,0,0.15);
+}
+
+/* Left Side */
+.auth-left {
+    flex:1;
+    background:linear-gradient(135deg,#2563eb,#4f46e5);
+    color:white;
+    padding:60px 40px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+.auth-logo {
+    margin-bottom:30px;
+}
+
+.auth-left h1 {
+    font-size:32px;
+    font-weight:700;
+    margin-bottom:15px;
+}
+
+.auth-left p {
+    font-size:15px;
+    opacity:0.9;
+    line-height:1.6;
+}
+
+/* Right Side */
+.auth-right {
+    flex:1;
+    padding:50px 45px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+/* Card */
+.auth-card {
+    width:100%;
+}
+
+/* Inputs */
+input {
+    width:100%;
+    padding:12px 14px;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    font-size:14px;
+    margin-top:6px;
+    margin-bottom:15px;
+    outline:none;
+    transition:0.2s;
+}
+
+input:focus {
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,0.1);
+}
+
+/* Button */
+button {
+    width:100%;
+    background:#2563eb;
+    border:none;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover {
+    background:#1e40af;
+}
+
+/* Links */    a {
+    color:#2563eb;
+    text-decoration:none;
+    font-size:14px;
+}
+
+a:hover {
+    text-decoration:underline;
+}
+
+/* Footer */
+.auth-footer {
+    margin-top:15px;
+    text-align:center;
+    font-size:14px;
+    color:#6b7280;
+}
+
+/* Responsive */
+@media(max-width:900px) {
+
+.auth-wrapper {
+    flex-direction:column;
+    max-width:420px;
+}
+
+.auth-left {
+    display:none;
+}
+
+.auth-right {
+    padding:40px 30px;
+}
+
+}
