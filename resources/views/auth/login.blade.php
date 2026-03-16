@@ -44,4 +44,24 @@
             </x-primary-button>
         </div>
     </form>
+
+    <!-- OR Divider -->
+    <div class="auth-divider">
+        <span>OR</span>
+    </div>
+
+    <!-- Facial Login Button -->
+    <div class="facial-login-wrapper">
+        <a href="{{ route('facial.login') }}" class="facial-login-btn">
+
+            <svg class="facial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 10h.01M15 10h.01M8 15a4 4 0 008 0M12 3a9 9 0 100 18 9 9 0 000-18z"/>
+            </svg>
+
+            <span>Login with Facial Recognition</span>
+
+        </a>
+    </div>
+    
 </x-guest-layout>

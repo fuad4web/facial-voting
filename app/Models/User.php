@@ -53,4 +53,15 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function votes()
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    // Helper to check if user has voted in a specific category
+    public function hasVotedInCategory($categoryId)
+    {
+        return $this->votes()->where('category_id', $categoryId)->exists();
+    }
 }
