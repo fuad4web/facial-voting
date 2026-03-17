@@ -1,43 +1,41 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Auth\FacialRegistrationController;
+use App\Http\Controllers\{ ProfileController, VotingController, };
+use App\Http\Controllers\Admin\{ AdminDashboardController, CandidateController, CategoryController, VoteController, };
+use App\Http\Controllers\Auth\{ FacialRegistrationController, };
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Custom facial registration routes
-Route::get('/register', [FacialRegistrationController::class, 'create'])
-    ->middleware('guest')
-    ->name('facial.register');
-Route::post('/facial-register', [FacialRegistrationController::class, 'store'])
-    ->middleware('guest');
-
-    // Add after your existing routes
-Route::get('/facial-login', [App\Http\Controllers\Auth\FacialLoginController::class, 'showLoginForm'])
-    ->middleware('guest')
-    ->name('facial.login');
-    
-Route::post('/facial-login/verify', [App\Http\Controllers\Auth\FacialLoginController::class, 'login'])
-    ->middleware('guest')
-    ->name('facial.login.verify');
-
-    // fortesting my facial recognition login
-    Route::get('/test-face', function () {
-        return view('test-face');
-    })->middleware('auth');
-
 // Default Breeze routes
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::middleware(['auth'])->group(function () {
+    Route::controller(VotingController::class)->group(function () {
+        Route::get('/voting', 'index')->name('voting.index');
+        Route::get('/voting/{category}', 'show')->name('voting.show');
+        Route::post('/voting/{category}/vote', 'store')->name('voting.store');
+        Route::get('/voting/{category}/results', 'results')->name('voting.results');
+    });
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    Route::resource('categories', CategoryController::class);
+    Route::resource('candidates', CandidateController::class);
+    
+    Route::get('/votes', [VoteController::class, 'index'])->name('votes.index');
 });
 
 require __DIR__.'/auth.php';
