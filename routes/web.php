@@ -38,4 +38,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/votes', [VoteController::class, 'index'])->name('votes.index');
 });
 
+    // route for real time voting results in JSON formatt
+    Route::get('/voting/{category}/results/json', [App\Http\Controllers\VotingController::class, 'realTimeVoteUpdate'])->name('voting.results.json');
+
 require __DIR__.'/auth.php';

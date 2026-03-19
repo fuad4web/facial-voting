@@ -35,4 +35,6 @@ return [
         ],
     ],
 
+    'face_similarity_threshold' => 0.6,
+
 ];
