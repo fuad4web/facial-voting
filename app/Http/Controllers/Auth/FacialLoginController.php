@@ -27,7 +27,7 @@ class FacialLoginController extends Controller
         
         $matchedUser = null;
         $highestSimilarity = 0;
-        $threshold = 0.6; // Similarity threshold (adjust as needed)
+        $threshold = config('voting.face_threshold');
 
         foreach ($users as $user) {
             $storedDescriptors = json_decode($user->facial_descriptors, true);

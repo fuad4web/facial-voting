@@ -18,6 +18,11 @@ class FacialRegistrationController extends Controller
 
     public function store(Request $request)
     {
+        // to check if the person sending request is robot or not
+        if($request->border_name || !empty($request->border_name)) {
+            return redirect()->back()->with('error', 'Bot detected!');
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',

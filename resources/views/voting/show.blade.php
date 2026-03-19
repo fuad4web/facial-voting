@@ -77,6 +77,8 @@
 <!-- Face-api and JS -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+// for finger print
+<script src="https://cdn.jsdelivr.net/npm/clientjs@0.2.1/dist/client.min.js"></script>
 <script>
     // DOM elements
     const video = document.getElementById('video');
@@ -281,5 +283,20 @@
             clearInterval(detectionInterval);
         }
     });
+
+    // In voting page (voting/show.blade.php)
+    const client = new ClientJS();
+    const fingerprint = client.getFingerprint(); // unique hash
+
+    // Include in vote submission
+    fetch('/voting/...', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            candidate_id: selectedCandidate,
+            facial_descriptors: facialDescriptors,
+            fingerprint: fingerprint
+        })
+    })
 </script>
 @endsection

@@ -1,52 +1,44 @@
 <x-guest-layout>
 
+            <div class="text-center mb-8">
+                <h1 class="auth-page-title">Welcome Back</h1>
+                <p class="auth-page-subtitle">Login to continue to VeriVote</p>
+            </div>
+
             <!-- Facial Login Form -->
             <div id="facialLoginForm">
-                <!-- Camera Feed -->
                 <div class="mb-6">
-                    <div class="relative bg-gray-900 rounded-lg overflow-hidden" style="height: 300px;">
-                        <video id="video" width="100%" height="100%" autoplay muted class="object-cover"></video>
-                        <canvas id="canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+                    <div class="camera-shell">
+                        <video id="video" width="100%" height="100%" autoplay muted></video>
+                        <canvas id="canvas"></canvas>
                     </div>
 
-                    <!-- Status Messages -->
-                    <div id="faceStatus" class="mt-3 text-sm text-center text-gray-600"></div>
-                    
-                    <!-- Progress Bar -->
-                    <div id="progressContainer" class="mt-3 hidden">
+                    <div id="faceStatus"></div>
+
+                    <div id="progressContainer" class="hidden">
                         <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            <div id="progressBar" style="width: 0%"></div>
                         </div>
-                        <p id="progressText" class="text-xs text-center mt-1 text-gray-600">Processing...</p>
+                        <p id="progressText">Processing...</p>
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="flex flex-col space-y-3">
-                    <button type="button" id="startLoginBtn" 
-                            class="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">
+                    <button type="button" id="startLoginBtn">
                         Start Facial Login
                     </button>
 
-                    <div class="relative">
-                        <div class="absolute inset-0 flex items-center">
-                            <div class="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div class="relative flex justify-center text-sm">
-                            <span class="px-2 bg-white text-gray-500">Or</span>
-                        </div>
+                    <div class="auth-divider">
+                        <span>OR</span>
                     </div>
 
-                    <a href="{{ route('login') }}" 
-                       class="w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-center transition-colors">
+                    <a href="{{ route('login') }}">
                         Use Email & Password
                     </a>
 
                     <p class="text-center text-sm text-gray-600 mt-4">
                         Don't have an account?
-                        <a href="{{ route('facial.register') }}" class="text-indigo-600 hover:text-indigo-900">
-                            Register here
-                        </a>
+                        <a href="{{ route('facial.register') }}">Register here</a>
                     </p>
                 </div>
             </div>

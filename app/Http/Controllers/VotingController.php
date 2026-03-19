@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\VoteCast;
+use App\Helpers\ActivityHelper;
 use App\Models\Category;
 use App\Models\Candidate;
 use App\Models\Vote;
@@ -13,11 +14,6 @@ use Illuminate\Support\Facades\Auth;
 
 class VotingController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     // Show list of categories available for voting
     public function index()
     {
@@ -27,7 +23,7 @@ class VotingController extends Controller
         
         // Get user's vote status for each category
         $user = Auth::user();
-        $votes = Vote::where('user_id', $user->id)
+        $votes = Vote::where('user_id', $user?->id)
             ->pluck('category_id')
             ->toArray();
 
@@ -37,123 +33,138 @@ class VotingController extends Controller
     // Show candidates for a specific category with face verification
     public function show(Category $category)
     {
-        if (!$category->is_active) {
+        if (!$category?->is_active) {
             return redirect()->route('voting.index')
                 ->with('error', 'This category is not active.');
         }
 
         // Check if user already voted in this category
-        if (Vote::where('user_id', Auth::id())->where('category_id', $category->id)->exists()) {
+        if (Vote::where('user_id', Auth::id())->where('category_id', $category?->id)->exists()) {
             return redirect()->route('voting.index')
                 ->with('error', 'You have already voted in this category.');
         }
 
-        $candidates = Candidate::where('category_id', $category->id)->get();
+        $candidates = Candidate::where('category_id', $category?->id)->get();
 
         return view('voting.show', compact('category', 'candidates'));
     }
 
     // Store vote after face verification
     public function store(Request $request, Category $category)
-{
-    $request->validate([
-        'candidate_id' => 'required|exists:candidates,id',
-        'facial_descriptors' => 'required|string', // from face verification
-    ]);
-
-    $user = Auth::user();
-
-    // Check if user already voted in this category (fastest with exists query)
-    if (Vote::where('user_id', $user->id)->where('category_id', $category->id)->exists()) {
-        Log::warning('Duplicate vote attempt', [
-            'user_id' => $user->id,
-            'category_id' => $category->id,
-            'ip' => $request->ip()
+    {
+        $request->validate([
+            'candidate_id' => 'required|exists:candidates,id',
+            'facial_descriptors' => 'required|string', // from face verification
+            'fingerprint' => 'nullable|string|max:255', // for fimgerprint request and ist set to nullable
         ]);
-        return response()->json([
-            'success' => false,
-            'message' => 'You have already voted in this category.'
-        ], 403);
+
+        $user = Auth::user();
+
+        // Check if user already voted in this category (fastest with exists query)
+        if (Vote::where('user_id', $user?->id)->where('category_id', $category?->id)->exists()) {
+            Log::warning('Duplicate vote attempt', [
+                'user_id' => $user?->id,
+                'category_id' => $category?->id,
+                'ip' => $request->ip()
+            ]);
+            
+            // log duplicate vote check
+            ActivityHelper::logActivity('vote_attempt', 'duplicate', $user?->id, ['category_id' => $category?->id]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'You have already voted in this category.'
+            ], 403);
+        }
+
+        // Verify face matches the registered user
+        $storedDescriptors = json_decode($user?->facial_descriptors, true);
+        $loginDescriptors = json_decode($request->facial_descriptors, true);
+
+        if (!$storedDescriptors || !$loginDescriptors) {
+            Log::error('Face data missing', ['user_id' => $user?->id]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Face data missing. Please re-register.'
+            ], 400);
+        }
+
+        $similarity = $this->calculateSimilarity($loginDescriptors, $storedDescriptors);
+
+        $faceSimilarityThreshold = config('voting.face_threshold');
+        if ($similarity < $faceSimilarityThreshold) {
+            Log::warning('Face verification failed', [
+                'user_id' => $user?->id,
+                'similarity' => $similarity,
+                'threshold' => $faceSimilarityThreshold
+            ]);
+
+            // log face verification failure
+            ActivityHelper::logActivity('face_verify', 'failed', $user?->id, ['similarity' => $similarity]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Face verification failed. Please try again.'
+            ], 401);
+        }
+
+        // Use transaction to ensure vote and user update are atomic
+        try {
+            DB::beginTransaction();
+
+            $vote = Vote::create([
+                'user_id' => $user?->id,
+                'candidate_id' => $request->candidate_id,
+                'category_id' => $category?->id,
+                'voted_at' => now(),
+                'fingerprint' => $request->fingerprint,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            // Update user's last vote timestamp (optional but useful)
+            $user->update(['last_vote_at' => now()]);
+
+            DB::commit();
+
+            // Broadcast the event (if you have real-time)
+            event(new VoteCast($vote));
+
+            Log::info('Vote cast successfully', [
+                'user_id' => $user?->id,
+                'vote_id' => $vote?->id,
+                'category' => $category?->id,
+                'candidate' => $request->candidate_id
+            ]);
+
+            ActivityHelper::logActivity('vote', 'success', $user?->id, [
+                'category_id' => $category?->id,
+                'candidate_id' => $request->candidate_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Vote cast successfully!',
+                'redirect' => route('voting.results', $category?->id)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Vote casting failed', [
+                'user_id' => $user?->id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while casting your vote. Please try again.'
+            ], 500);
+        }
     }
-
-    // Verify face matches the registered user
-    $storedDescriptors = json_decode($user->facial_descriptors, true);
-    $loginDescriptors = json_decode($request->facial_descriptors, true);
-
-    if (!$storedDescriptors || !$loginDescriptors) {
-        Log::error('Face data missing', ['user_id' => $user->id]);
-        return response()->json([
-            'success' => false,
-            'message' => 'Face data missing. Please re-register.'
-        ], 400);
-    }
-
-    $similarity = $this->calculateSimilarity($loginDescriptors, $storedDescriptors);
-
-    $faceSimilarityThreshold = config('services.face_similarity_threshold', 0.6);
-    if ($similarity < $faceSimilarityThreshold) {
-        Log::warning('Face verification failed', [
-            'user_id' => $user?->id,
-            'similarity' => $similarity,
-            'threshold' => $faceSimilarityThreshold
-        ]);
-        return response()->json([
-            'success' => false,
-            'message' => 'Face verification failed. Please try again.'
-        ], 401);
-    }
-
-    // Use transaction to ensure vote and user update are atomic
-    try {
-        DB::beginTransaction();
-
-        $vote = Vote::create([
-            'user_id' => $user->id,
-            'candidate_id' => $request->candidate_id,
-            'category_id' => $category->id,
-            'voted_at' => now(),
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-
-        // Update user's last vote timestamp (optional but useful)
-        $user->update(['last_vote_at' => now()]);
-
-        DB::commit();
-
-        // Broadcast the event (if you have real-time)
-        event(new VoteCast($vote));
-
-        Log::info('Vote cast successfully', [
-            'user_id' => $user->id,
-            'vote_id' => $vote->id,
-            'category' => $category->id,
-            'candidate' => $request->candidate_id
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Vote cast successfully!',
-            'redirect' => route('voting.results', $category->id)
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Vote casting failed', [
-            'user_id' => $user->id,
-            'error' => $e->getMessage()
-        ]);
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while casting your vote. Please try again.'
-        ], 500);
-    }
-}
 
     // Show results for a category or overall
     public function results(Category $category)
     {
-        $candidates = $category->candidates()
+        $candidates = $category?->candidates()
             ->withCount('votes')
             ->orderBy('votes_count', 'desc')
             ->get();
@@ -191,7 +202,7 @@ class VotingController extends Controller
     // function for al time update of voting results in JSON format
     public function realTimeVoteUpdate(Category $category)
     {
-        $candidates = $category->candidates()
+        $candidates = $category?->candidates()
             ->withCount('votes')
             ->orderBy('votes_count', 'desc')
             ->get();

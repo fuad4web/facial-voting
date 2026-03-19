@@ -1,88 +1,72 @@
 <x-guest-layout>
-    
-            <!-- Logo -->
-            <div class="flex justify-center mb-8">
-                <h1 class="text-2xl font-bold text-gray-900">Secure Voting System</h1>
+
+    <div class="text-center mb-8">
+        <h1 class="auth-page-title">VeriVote</h1>
+        <p class="auth-page-subtitle">Create your account and set up facial recognition</p>
+    </div>
+
+    <form method="POST" action="{{ route('facial.register') }}" id="registrationForm">
+        @csrf
+
+        <div class="mb-4">
+            <label for="name">Full Name</label>
+            <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus>
+            @error('name')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div class="mb-4">
+            <label for="email">Email</label>
+            <input id="email" type="email" name="email" value="{{ old('email') }}" required>
+            @error('email')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <input type="hidden" name="border_name" id="border_name">
+
+        <div class="mb-4">
+            <label for="password">Password</label>
+            <input id="password" type="password" name="password" required>
+            @error('password')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div class="mb-4">
+            <label for="password_confirmation">Confirm Password</label>
+            <input id="password_confirmation" type="password" name="password_confirmation" required>
+        </div>
+
+        <div class="mb-6">
+            <label>Facial Recognition Setup</label>
+
+            <div class="camera-shell">
+                <video id="video" width="100%" height="100%" autoplay muted></video>
+                <canvas id="canvas"></canvas>
             </div>
 
-            <!-- Registration Form -->
-            <form method="POST" action="{{ route('facial.register') }}" id="registrationForm">
-                @csrf
+            <button type="button" id="captureBtn" style="margin-top:12px;">
+                Capture Face
+            </button>
 
-                <!-- Name -->
-                <div class="mb-4">
-                    <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
-                    <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    @error('name')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <input type="hidden" name="facial_descriptors" id="facial_descriptors">
+            <input type="hidden" name="facial_image" id="facial_image">
 
-                <!-- Email -->
-                <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    @error('email')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div id="faceStatus"></div>
+        </div>
 
-                <!-- Password -->
-                <div class="mb-4">
-                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                    <input id="password" type="password" name="password" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    @error('password')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+        <div class="flex items-center justify-end mt-4">
+            <a href="{{ route('login') }}">
+                Already registered?
+            </a>
 
-                <!-- Confirm Password -->
-                <div class="mb-4">
-                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-                    <input id="password_confirmation" type="password" name="password_confirmation" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-
-                <!-- Facial Recognition Section -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Facial Recognition Setup</label>
-                    
-                    <!-- Video container for face capture -->
-                    <div class="relative bg-gray-900 rounded-lg overflow-hidden" style="height: 300px;">
-                        <video id="video" width="100%" height="100%" autoplay muted class="object-cover"></video>
-                        <canvas id="canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
-                    </div>
-
-                    <!-- Face capture button -->
-                    <button type="button" id="captureBtn" 
-                            class="mt-3 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                        Capture Face
-                    </button>
-
-                    <!-- Hidden inputs for facial data -->
-                    <input type="hidden" name="facial_descriptors" id="facial_descriptors">
-                    <input type="hidden" name="facial_image" id="facial_image">
-                    
-                    <div id="faceStatus" class="mt-2 text-sm text-center text-gray-600"></div>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="flex items-center justify-end mt-4">
-                    <a class="text-sm text-gray-600 hover:text-gray-900" href="{{ route('login') }}">
-                        Already registered?
-                    </a>
-
-                    <button type="submit" id="submitBtn" disabled
-                            class="ml-4 bg-gray-400 text-white py-2 px-4 rounded-md cursor-not-allowed">
-                        Register
-                    </button>
-                </div>
-            </form>
-        <!-- </div>
-    </div> -->
+            <button type="submit" id="submitBtn" disabled style="margin-left:16px;">
+                Register
+            </button>
+        </div>
+    </form>
 
     <!-- Face API Script - Replace the existing script section -->
     <!-- Face API Script -->

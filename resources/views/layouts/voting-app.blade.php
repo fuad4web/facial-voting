@@ -4,14 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Secure Voting System')</title>
+    <title>VeriVote - Secure Voting System</title>
     
+    <link rel="icon" type="image/svg+xml" href="{{ asset('download.svg') }}">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     
     <!-- Scripts -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    // fingerprint for js
+    <!-- <script src="https://cdn.jsdelivr.net/npm/clientjs@0.2.1/dist/client.min.js"></script> -->
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
