@@ -3,26 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Category;
-use App\Models\Candidate;
-use App\Models\Vote;
+use App\Services\{ UserService, VoteService, CategoryService, };
 
 class AdminDashboardController extends Controller
 {
+    protected $categoryService, $voteService, $userService;
+
+    public function __construct(CategoryService $categoryService, VoteService $voteService, UserService $userService)
+    {
+        $this->categoryService = $categoryService;
+        $this->voteService = $voteService;
+        $this->userService = $userService;
+    }
+
     public function index()
     {
-        $totalUsers = User::count();
-        $totalVotes = Vote::count();
-        $totalCategories = Category::count();
-        $totalCandidates = Candidate::count();
+        $totalUsers = $this->userService?->countUsers();
+        $totalVotes = $this->voteService?->countVoters();
+        $totalCategories = $this->categoryService?->countCategories();
+        $totalCandidates = $this->categoryService?->countCandidates();
         
-        $recentVotes = Vote::with(['user', 'candidate', 'category'])
-            ->latest('voted_at')
-            ->take(10)
-            ->get();
+        $recentVotes = $this->voteService?->recentVotes();
         
-        $categories = Category::withCount('votes')->get();
+        $categories = $this->categoryService?->fetchCategoriesWithCount();
         
         return view('admin.dashboard', compact(
             'totalUsers', 'totalVotes', 'totalCategories', 'totalCandidates',

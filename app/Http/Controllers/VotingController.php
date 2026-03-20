@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\VoteCast;
 use App\Helpers\ActivityHelper;
 use App\Models\Category;
-use App\Models\Candidate;
-use App\Models\Vote;
+use App\Services\{ UserService, VoteService, CategoryService, };
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
@@ -14,18 +13,23 @@ use Illuminate\Support\Facades\Auth;
 
 class VotingController extends Controller
 {
+    protected $categoryService, $voteService, $userService;
+
+    public function __construct(CategoryService $categoryService, VoteService $voteService, UserService $userService)
+    {
+        $this->categoryService = $categoryService;
+        $this->voteService = $voteService;
+        $this->userService = $userService;
+    }
+
     // Show list of categories available for voting
     public function index()
     {
-        $categories = Category::where('is_active', true)
-            ->orderBy('order')
-            ->get();
+        $categories = $this->categoryService?->fetchActiveCategories();
         
         // Get user's vote status for each category
         $user = Auth::user();
-        $votes = Vote::where('user_id', $user?->id)
-            ->pluck('category_id')
-            ->toArray();
+        $votes = $this->voteService?->voteCategoryId($user?->id);
 
         return view('voting.index', compact('categories', 'votes'));
     }
@@ -39,12 +43,13 @@ class VotingController extends Controller
         }
 
         // Check if user already voted in this category
-        if (Vote::where('user_id', Auth::id())->where('category_id', $category?->id)->exists()) {
+        $checkUserCategoryVote = $this->voteService?->checkUserVoteCategory(Auth::id(), $category?->id);
+        if ($checkUserCategoryVote) {
             return redirect()->route('voting.index')
                 ->with('error', 'You have already voted in this category.');
         }
 
-        $candidates = Candidate::where('category_id', $category?->id)->get();
+        $candidates = $this->userService?->candidateCategory($category?->id);
 
         return view('voting.show', compact('category', 'candidates'));
     }
@@ -60,8 +65,9 @@ class VotingController extends Controller
 
         $user = Auth::user();
 
-        // Check if user already voted in this category (fastest with exists query)
-        if (Vote::where('user_id', $user?->id)->where('category_id', $category?->id)->exists()) {
+        // Check if user already voted in this category
+        $checkUserCategoryVote = $this->voteService?->checkUserVoteCategory($user?->id, $category?->id);
+        if ($checkUserCategoryVote) {
             Log::warning('Duplicate vote attempt', [
                 'user_id' => $user?->id,
                 'category_id' => $category?->id,
@@ -112,7 +118,7 @@ class VotingController extends Controller
         try {
             DB::beginTransaction();
 
-            $vote = Vote::create([
+            $voteCredentials = [
                 'user_id' => $user?->id,
                 'candidate_id' => $request->candidate_id,
                 'category_id' => $category?->id,
@@ -120,10 +126,15 @@ class VotingController extends Controller
                 'fingerprint' => $request->fingerprint,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-            ]);
+            ];
+
+            $vote = $this->voteService?->createVote($voteCredentials);
 
             // Update user's last vote timestamp (optional but useful)
-            $user->update(['last_vote_at' => now()]);
+            $voteNowdata = [
+                'last_vote_at' => now()
+            ];
+            $this->userService?->updateUser($user?->id, $voteNowdata);
 
             DB::commit();
 
@@ -164,10 +175,7 @@ class VotingController extends Controller
     // Show results for a category or overall
     public function results(Category $category)
     {
-        $candidates = $category?->candidates()
-            ->withCount('votes')
-            ->orderBy('votes_count', 'desc')
-            ->get();
+        $candidates = $this->voteService?->fetchVoteResults($category);
 
         return view('voting.results', compact('category', 'candidates'));
     }
@@ -202,10 +210,7 @@ class VotingController extends Controller
     // function for al time update of voting results in JSON format
     public function realTimeVoteUpdate(Category $category)
     {
-        $candidates = $category?->candidates()
-            ->withCount('votes')
-            ->orderBy('votes_count', 'desc')
-            ->get();
+        $candidates = $this->voteService?->fetchVoteResults($category);
 
         return response()->json([
             'candidates' => $candidates,

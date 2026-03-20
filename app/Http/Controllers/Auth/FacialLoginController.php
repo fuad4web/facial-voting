@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class FacialLoginController extends Controller
 {
+    protected $userService;
+
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+    }
+
     public function showLoginForm()
     {
         return view('auth.facial-login');
@@ -23,7 +30,7 @@ class FacialLoginController extends Controller
         $loginDescriptors = json_decode($request->facial_descriptors, true);
         
         // Get all users with facial descriptors
-        $users = User::whereNotNull('facial_descriptors')->get();
+        $users = $this->userService?->fetchFacialUsers();
         
         $matchedUser = null;
         $highestSimilarity = 0;
